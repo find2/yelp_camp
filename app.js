@@ -37,6 +37,7 @@ app.use(flash())
 
 app.set( 'port', ( process.env.PORT || 3000 ));
 app.set("view engine", "ejs")
+app.locals.moment = require('moment');
 
 // PASSPORT configuration
 app.use(require('express-session')({
