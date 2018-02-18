@@ -1,7 +1,8 @@
 var express = require('express'),
     router = express.Router(),
     Campground = require('../models/campground'),
-    middleware = require('../middleware')
+    middleware = require('../middleware'),
+    geocoder = require('geocoder')
 
 // INDEX - Show All campgrounds from db
 router.get('/', function(req,res){
@@ -69,16 +70,21 @@ router.post('/', middleware.isLoggedIn, function(req,res){
         id: req.user._id,
         username: req.user.username
     }
-    var newCampground = {name: name, price: price, image:image, description: desc, author: author}
-    Campground.create(newCampground, function(err, campground){
-        if(err){
-            console.log(err)
-            req.flash("error", "Something went wrong! Check your database!")
-            res.redirect("back")
-        } else {
-            req.flash("success", "Added new Campground '"+name+"'")
-            res.redirect("/campgrounds")
-        }
+    geocoder.geocode(req.body.location, function (err, data) {
+        var lat = data.results[0].geometry.location.lat
+        var lng = data.results[0].geometry.location.lng
+        var location = data.results[0].formatted_address
+        var newCampground = {name: name, price: price, image:image, description: desc, location: location, lat: lat, lng: lng, author: author}
+        Campground.create(newCampground, function(err, campground){
+            if(err){
+                console.log(err)
+                req.flash("error", "Something went wrong! Check your database!")
+                res.redirect("back")
+            } else {
+                req.flash("success", "Added new Campground '"+name+"'")
+                res.redirect("/campgrounds")
+            }
+        })
     })
 })
 
@@ -91,15 +97,30 @@ router.get('/:id/edit', middleware.isOwner, function(req, res){
 
 // UPDATE - update data in database
 router.put('/:id', middleware.isOwner, function(req, res){
-    Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, campground){
-        if(err){
-            req.flash("error", "Cannot update Campground!")
-            res.redirect('/campgrounds')
-        } else {
-            req.flash("success", "Campground has been updated!")
-            res.redirect('/campgrounds/'+req.params.id)
-        }
+    geocoder.geocode(req.body.location, function (err, data) {
+        var lat = data.results[0].geometry.location.lat;
+        var lng = data.results[0].geometry.location.lng;
+        var location = data.results[0].formatted_address;
+        var newData = {name: req.body.campground.name, image: req.body.campground.image, description: req.body.campground.description, cost: req.body.campground.price, location: location, lat: lat, lng: lng}
+        Campground.findByIdAndUpdate(req.params.id, newData, function(err, campground){
+            if(err){
+                req.flash("error", "Cannot update Campground!")
+                res.redirect('/campgrounds')
+            } else {
+                req.flash("success", "Campground has been updated!")
+                res.redirect('/campgrounds/'+campground._id)
+            }
+        })
     })
+    // Campground.findByIdAndUpdate(req.params.id, req.body.campground, function(err, campground){
+    //     if(err){
+    //         req.flash("error", "Cannot update Campground!")
+    //         res.redirect('/campgrounds')
+    //     } else {
+    //         req.flash("success", "Campground has been updated!")
+    //         res.redirect('/campgrounds/'+campground._id)
+    //     }
+    // })
 })
 
 // DELETE - delete specific campground from db
