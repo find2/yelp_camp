@@ -34,6 +34,7 @@ app.use(express.static(__dirname+"/public"))
 app.use(methodOveeride('_method'))
 app.use(flash())
 
+app.set( 'port', ( process.env.PORT || 3000 ));
 app.set("view engine", "ejs")
 
 // PASSPORT configuration
@@ -70,6 +71,6 @@ app.get('*', function(req, res){
     res.send("404 Page Not Found!")
 })
 
-app.listen(3000, 'localhost', function(){
-    console.log("YelpCamp Server Has Started!")
+app.listen(app.get('port'), function(){
+    console.log("YelpCamp Server Has Started! Port " + app.get('port'))
 })
